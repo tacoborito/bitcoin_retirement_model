@@ -19,10 +19,18 @@
         input { width: 100%; padding: 0.5em; margin-top: 0.3em; }
         button { margin-top: 1em; padding: 0.7em 2em; background: #ff9900; color: white; border: none; cursor: pointer; }
         .results { margin-top: 2em; padding: 1em; background: #f9f9f9; border-left: 4px solid #ff9900; }
+        img.context {
+            width: 100%;
+            max-width: 100%;
+            margin-bottom: 1em;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
     <h1>Bitcoin Rentenplaner</h1>
+    <img src="btc_price_q5_powerlaw.png" alt="BTC Preis Perzentil" class="context">
+
     <label>Aktuelles Alter: <input type="number" id="age" value="45"></label>
     <label>Geplanter Rentenbeginn (Alter): <input type="number" id="retire_age" value="60"></label>
     <label>Jährliche Ausgaben im Ruhestand (USD): <input type="number" id="expenses" value="100000"></label>
@@ -40,6 +48,10 @@
             return Math.pow(10, a) * Math.pow(year - t_ref, b);
         }
 
+        function formatCurrency(x) {
+            return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(x);
+        }
+
         function calculate() {
             const age = parseFloat(document.getElementById('age').value);
             const retireAge = parseFloat(document.getElementById('retire_age').value);
@@ -55,43 +67,16 @@
             const btc_diff = Math.max(0, btc_needed - btcHeld);
             const dca_usd = btc_diff > 0 ? (btc_diff * btc_price) / ((retireAge - age) * 12) : 0;
 
-            const formatter = new Intl.NumberFormat('en-US');
             document.getElementById('results').innerHTML = `
                 <b>Ergebnisse:</b><br>
                 Rentenjahr: ${retirementYear}<br>
-                Erwarteter BTC-Preis: ${formatter.format(btc_price)}<br>
-                Kapitalbedarf (inflationsbereinigt): ${formatter.format(capital_needed)}<br>
+                Erwarteter BTC-Preis: ${formatCurrency(btc_price)}<br>
+                Kapitalbedarf (inflationsbereinigt): ${formatCurrency(capital_needed)}<br>
                 Benötigte BTC: ${btc_needed.toFixed(4)}<br>
                 Zusätzlicher Bedarf: ${btc_diff.toFixed(4)} BTC<br>
-                Monatliche Sparrate (in USD): ${formatter.format(dca_usd)}
+                Monatliche Sparrate (in USD): ${formatCurrency(dca_usd)}
             `;
         }
-
-        const ctx = document.getElementById('btcChart').getContext('2d');
-        const btcChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [2025, 2030, 2035, 2040, 2045, 2050, 2055, 2060, 2065, 2070, 2075],
-                datasets: [{
-                    label: 'BTC Preis (Power-Law)',
-                    data: [128913.96, 254418.24, 433943.68, 673603.34, 978940.4, 1355063.48, 1806735.51, 2338435.74, 2954405.26, 3658681.36, 4455124.44],
-                    borderColor: '#ff9900',
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        title: { display: true, text: 'BTC Preis in USD' },
-                        type: 'logarithmic'
-                    },
-                    x: {
-                        title: { display: true, text: 'Jahr' }
-                    }
-                }
-            }
-        });
     </script>
 </body>
 </html>
