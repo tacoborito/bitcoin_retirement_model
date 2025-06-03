@@ -22,116 +22,86 @@
             margin-top: 1em;
         }
         input {
-            padding: 0.5em;
-            margin-top: 0.2em;
             width: 100%;
+            padding: 0.5em;
+            font-size: 1em;
+            margin-top: 0.3em;
         }
         button {
-            margin-top: 1em;
-            padding: 0.7em 1.5em;
-            background: #ff9900;
-            border: none;
+            margin-top: 1.5em;
+            background-color: #ff9900;
             color: white;
+            padding: 0.8em 1.2em;
+            border: none;
             font-size: 1em;
             cursor: pointer;
         }
-        canvas {
+        .results {
             margin-top: 2em;
+            background-color: #f9f9f9;
+            padding: 1em;
+            border-left: 5px solid #ff9900;
         }
     </style>
 </head>
 <body>
     <h1>Bitcoin Rentenplaner</h1>
-    <label>Aktuelles Alter:
-        <input type="number" id="age" value="35">
-    </label>
-    <label>Geplanter Rentenbeginn (Alter):
-        <input type="number" id="retirementAge" value="60">
-    </label>
-    <label>Jährliche Ausgaben im Ruhestand (USD):
-        <input type="number" id="annualExpenses" value="70000">
-    </label>
-    <label>Aktueller BTC-Bestand:
-        <input type="number" id="btcOwned" value="0.2" step="0.01">
-    </label>
+
+    <label for="age">Aktuelles Alter:</label>
+    <input type="number" id="age" value="45">
+
+    <label for="retirement">Geplanter Rentenbeginn (Alter):</label>
+    <input type="number" id="retirement" value="60">
+
+    <label for="expenses">Jährliche Ausgaben im Ruhestand (USD):</label>
+    <input type="number" id="expenses" value="100000">
+
+    <label for="btc">Aktueller BTC-Bestand:</label>
+    <input type="number" id="btc" value="0.5" step="0.00000001">
+
     <button onclick="calculate()">Berechnen</button>
-    <p id="output"></p>
-    <canvas id="btcChart" width="700" height="400"></canvas>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div class="results" id="results">
+        <!-- Ergebnisse hier -->
+    </div>
+
     <script>
-        function powerLawPrice(year) {
-            const t0 = 2009;
-            const A = Math.pow(10, -17.5);
-            const b = 5.0;
-            return A * Math.pow(year - t0, b);
-        }
-
         function calculate() {
-            const age = parseInt(document.getElementById("age").value);
-            const retirementAge = parseInt(document.getElementById("retirementAge").value);
-            const annualExpenses = parseFloat(document.getElementById("annualExpenses").value);
-            const btcOwned = parseFloat(document.getElementById("btcOwned").value);
+            const age = parseFloat(document.getElementById('age').value);
+            const retirementAge = parseFloat(document.getElementById('retirement').value);
+            const yearlyUSD = parseFloat(document.getElementById('expenses').value);
+            const currentBTC = parseFloat(document.getElementById('btc').value);
 
-            const currentYear = new Date().getFullYear();
-            const yearsUntilRetirement = retirementAge - age;
-            const retirementYear = currentYear + yearsUntilRetirement;
-            const avgLifeExpectancy = 80;
-            const retirementDuration = avgLifeExpectancy - retirementAge;
-            const cppiInflation = 0.033;
+            const t_ref = 2009;
+            const a = 2.1;
+            const b = 2.5;
 
-            const futureExpenses = annualExpenses * ((1 + cppiInflation) ** retirementDuration - 1) / cppiInflation;
-            const btcPriceAtRetirement = powerLawPrice(retirementYear);
-            const requiredBTC = futureExpenses / btcPriceAtRetirement;
-            const additionalBTCNeeded = Math.max(0, requiredBTC - btcOwned);
-            const fiatPerMonth = additionalBTCNeeded * btcPriceAtRetirement / (yearsUntilRetirement * 12);
+            const retirementYear = (new Date()).getFullYear() + (retirementAge - age);
+            const duration = 20;
+            const inflation = 0.07;
 
-            document.getElementById("output").innerHTML = `
-                <strong>Ergebnisse:</strong><br>
-                Rentenjahr: ${retirementYear}<br>
-                Erwarteter BTC-Preis: $${btcPriceAtRetirement.toFixed(0)}<br>
-                Benötigte BTC: ${requiredBTC.toFixed(3)}<br>
-                Zusätzlicher Bedarf: ${additionalBTCNeeded.toFixed(3)} BTC<br>
-                Monatliche Sparrate (in USD): $${fiatPerMonth.toFixed(0)}
-            `;
+            const btc_price = Math.pow(10, a) * Math.pow(retirementYear - t_ref, b);
+            const capital_needed = yearlyUSD * (1 - Math.pow(1 + inflation, -duration)) / Math.log(1 + inflation);
+            const btc_needed = capital_needed / btc_price;
+            const btc_diff = Math.max(0, btc_needed - currentBTC);
+            const months_to_save = (retirementAge - age) * 12;
+            const dca_usd = btc_diff * btc_price / months_to_save;
 
-            const labels = [];
-            const prices = [];
-            for (let y = currentYear; y <= retirementYear + 5; y++) {
-                labels.push(y);
-                prices.push(powerLawPrice(y));
-            }
-
-            const ctx = document.getElementById('btcChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'BTC Preis (Power-Law)',
-                        data: prices,
-                        borderColor: '#ff9900',
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'BTC Preis in USD'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Jahr'
-                            }
-                        }
-                    }
-                }
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0
             });
+
+            document.getElementById('results').innerHTML = `
+                <strong>Ergebnisse:</strong><br>
+                Rentenjahr: \${retirementYear}<br>
+                Erwarteter BTC-Preis: \${formatter.format(btc_price)}<br>
+                Kapitalbedarf (inflationsbereinigt): \${formatter.format(capital_needed)}<br>
+                Benötigte BTC: \${btc_needed.toFixed(4)}<br>
+                Zusätzlicher Bedarf: \${btc_diff.toFixed(4)} BTC<br>
+                Monatliche Sparrate (in USD): \${formatter.format(dca_usd)}
+            `;
         }
     </script>
 </body>
