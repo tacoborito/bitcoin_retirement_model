@@ -52,31 +52,7 @@
             return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(x);
         }
 
-        function calculate() {
-            const age = parseFloat(document.getElementById('age').value);
-            const retireAge = parseFloat(document.getElementById('retire_age').value);
-            const expenses = parseFloat(document.getElementById('expenses').value);
-            const btcHeld = parseFloat(document.getElementById('btc_held').value);
-            const retirementYear = new Date().getFullYear() + (retireAge - age);
-            const duration = 80 - retireAge;
-            const inflation = 0.07;
-
-            const capital_needed = expenses * ((1 - Math.pow(1 + inflation, -duration)) / inflation);
-            const btc_price = powerLawPrice(retirementYear);
-            const btc_needed = capital_needed / btc_price;
-            const btc_diff = Math.max(0, btc_needed - btcHeld);
-            const dca_usd = btc_diff > 0 ? (btc_diff * btc_price) / ((retireAge - age) * 12) : 0;
-
-            document.getElementById('results').innerHTML = `
-                <b>Ergebnisse:</b><br>
-                Rentenjahr: ${retirementYear}<br>
-                Erwarteter BTC-Preis: ${formatCurrency(btc_price)}<br>
-                Kapitalbedarf (inflationsbereinigt): ${formatCurrency(capital_needed)}<br>
-                Benötigte BTC: ${btc_needed.toFixed(4)}<br>
-                Zusätzlicher Bedarf: ${btc_diff.toFixed(4)} BTC<br>
-                Monatliche Sparrate (in USD): ${formatCurrency(dca_usd)}
-            `;
-        }
+const inflation = parseFloat(document.getElementById('inflation').value) / 100
     </script>
 </body>
 </html>
