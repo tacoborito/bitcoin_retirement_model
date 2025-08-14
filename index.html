@@ -58,7 +58,7 @@
             const expenses = parseFloat(document.getElementById('expenses').value);
             const btcHeld = parseFloat(document.getElementById('btc_held').value);
             const retirementYear = new Date().getFullYear() + (retireAge - age);
-            const duration = 20;
+            const duration = 80 - retireAge;
             const inflation = 0.07;
 
             const capital_needed = expenses * ((1 - Math.pow(1 + inflation, -duration)) / inflation);
